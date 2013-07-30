@@ -7,7 +7,7 @@ A way to create pipelines for method processing.
 var pipeline = createPipeline(['get', 'put', 'delete']);
 
 // Add a logger
-pipeline.addLast({
+pipeline.addLast('logger', {
 	get: function(ctx, uri, cb) {
 		console.log('Getting: ' + uri);
 		return ctx.next(uri, cb);
@@ -25,7 +25,7 @@ pipeline.addLast({
 });
 
 // Add a cache handler
-pipeline.addLast({
+pipeline.addLast('cache', {
 	get: function(ctx, uri, cb) {
 		if (uri in cache) {
 			// Call back with cached item
@@ -52,7 +52,7 @@ pipeline.addLast({
 });
 
 // Add the actual resource retriever
-pipeline.addLast({
+pipeline.addLast('xhr', {
 	get: function(ctx, uri, cb) {
 		xhr.get(uri, cb);
 	},
@@ -68,7 +68,7 @@ pipeline.addLast({
 
 // Start using the pipeline
 pipeline.get('http://example.com/resource', function(resource) {
-	
+	...
 });
 
 pipeline.put('http://example.com/resource2', resource);
