@@ -21,9 +21,94 @@ PipeContext.prototype = {
 	_nextHandler: function() {
 		if (this._i >= this._handlers.length) return this._end;
 
-		var handler = this._handlers[this._i];
+		var handler = this._handlers[this._i].handler;
 		this._i += 1;
 		return handler;
+	},
+
+	length: function() {
+		return this._handlers.length;
+	}
+};
+
+function indexOfHandler(handlers, len, target) {
+	for (var i = 0; i < len; ++i) {
+		var handler = handlers[i];
+		if (handler.name === target || handler.handler === target) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+var abstractPipeline = {
+	addFirst: function(name, handler) {
+		this._handlers.unshift({name: name, handler: handler});
+	},
+
+	addLast: function(name, handler) {
+		this._handlers.push({name: name, handler: handler});
+	},
+
+ 	/**
+ 	Add the handler with the given name after the 
+ 	handler specified by target.  Target can be a handler
+ 	name or a handler instance.
+ 	*/
+	addAfter: function(target, name, handler) {
+		var handlers = this._handlers;
+		var len = handlers.length;
+		var i = indexOfHandler(handlers, len, target);
+
+		if (i >= 0) {
+			handlers.splice(i+1, 0, {name: name, handler: handler});
+		}
+	},
+
+	/**
+	Add the handler with the given name after the handler
+	specified by target.  Target can be a handler name or
+	a handler instance.
+	*/
+	addBefore: function(target, name, handler) {
+		var handlers = this._handlers;
+		var len = handlers.length;
+		var i = indexOfHandler(handlers, len, target);
+
+		if (i >= 0) {
+			handlers.splice(i, 0, {name: name, handler: handler});
+		}
+	},
+
+	/**
+	Replace the handler specified by target.
+	*/
+	replace: function(target, newName, handler) {
+		var handlers = this._handlers;
+		var len = handlers.length;
+		var i = indexOfHandler(handlers, len, target);
+
+		if (i >= 0) {
+			handlers.splice(i, 1, {name: newName, handler: handler});
+		}
+	},
+
+	removeFirst: function() {
+		return this._handlers.shift();
+	},
+
+	removeLast: function() {
+		return this._handlers.pop();
+	},
+
+	remove: function(target) {
+		var handlers = this._handlers;
+		var len = handlers.length;
+		var i = indexOfHandler(handlers, len, target);
+
+		if (i >= 0)
+			handlers.splice(i, 1);
 	}
 };
 
@@ -39,11 +124,7 @@ function createPipeline(pipedMethodNames) {
 		this.end = end;
 	}
 
-	var pipelineProto = Pipeline.prototype = {
-		addHandler: function(handler) {
-			this._handlers.push(handler);
-		}
-	};
+	var pipelineProto = Pipeline.prototype = Object.create(abstractPipeline);
 
 	pipedMethodNames.forEach(function(name) {
 		end[name] = endStubFunc;

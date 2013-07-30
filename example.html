@@ -1,24 +1,110 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<link href="http://netdna.bootstrapcdn.com/bootstrap/3.0.0-rc1/css/bootstrap.min.css" rel="stylesheet">
+	<style>
+	body {
+		background: #111;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		-khtml-user-select: none;
+		-moz-user-select: moz-none;
+		-ms-user-select: none;
+		user-select: none;
+	}
+
+	.container {
+		background: #EEE;
+		border-radius: 0px 0px 4px 4px;
+		border: 1px;
+		border-color: rgba(0,0,0,0.3);
+	}
+
+	.pipelineChoices {
+		width: 520px;
+		margin: 0 auto;
+	}
+
+	.output {
+		height: 600px;
+		overflow: scroll;
+	}
+
+	.close {
+		float: none;
+		margin-top: 2px;
+	}
+	</style>
+	<title>Pipeline.js example</title>
 </head>
 <body>
+	<div class="container">
+		<div class="row">
+				<div class="pipelineChoices">
+					<div><strong>Add to pipeline:</strong></div>
+					<button class="btn btn-default" data-name="eventLogger">Event Logger</button>
+					<button class="btn btn-default" data-name="holdTimer">Hold Timer</button>
+					<button class="btn btn-default" data-name="eventCounter">Event Counter</button>
+					<button class="btn btn-default" data-name="distanceCalculator">Distance Calculator</button>
+				</div>
+		</div>
+
+		<p></p>
+
+		<div class="row">
+			<div class="col-lg-6">
+				<center><strong>Pipeline Contents</strong></center>
+			</div>
+			<div class="col-lg-6">
+				<center><strong>Pipeline Output</strong></center>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-lg-6">
+				<ol id="pipeline">
+				</ol>
+			</div>
+			<div class="col-lg-6">
+				<div class="output">
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 	<script src="pipeline.js"></script>
 	<script>
-		var pipeline = createPipeline(['mousePressed', 'mouseReleased']);
+		var $output = $('.output');
+		var logSize = 0;
+		function br() {
+			$output.append('<br/>');
+		}
+
+//$('#div1').scrollTop($('#div1')[0].scrollHeight);
+		function log(message) {
+			if (logSize >= 100) {
+				$output.empty();
+				logSize = 0;
+			}
+			var parts = message.split(':');
+			$output.append('<p><strong>' + parts[0] + ': </strong>' + parts[1] + '</p>');
+			++logSize;
+
+			$output.scrollTop($output[0].scrollHeight);
+		}
 
 		function EventLogger() {
 		}
 
 		EventLogger.prototype = {
 			mousePressed: function(ctx, e) {
-				console.log(e);
-				ctx.next(e);
+				log("Pressed Event: " + e);
+				return ctx.next(e);
 			},
 
 			mouseReleased: function(ctx, e) {
-				console.log(e);
-				ctx.next(e);
+				log("Released Event: " + e);
+				return ctx.next(e);
 			}
 		};
 
@@ -26,24 +112,57 @@
 		}
 
 		HoldTimer.prototype = {
+			mousePressed: function(ctx, e) {
+				this._startTime = Date.now();
+				return ctx.next(e);
+			},
 
+			mouseReleased: function(ctx, e) {
+				log("Hold time: " + (Date.now() - this._startTime));
+				return ctx.next(e);
+			}
 		};
 
 		function DistanceCalculator() {
 		}
 
 		DistanceCalculator.prototype = {
+			mousePressed: function(ctx, e) {
+				this._e = e;
+				return ctx.next(e);
+			},
 
+			mouseReleased: function(ctx, e) {
+				var dist = Math.sqrt(Math.pow(e.pageX - this._e.pageX, 2),
+									Math.pow(e.pageY - this._e.pageY, 2));
+				log("Distance: " + dist);
+				return ctx.next(e);
+			}
 		};
 
-		function EventTimer() {
+		function EventCounter() {
+			this._pressEvents = 0;
+			this._releaseEvents = 0;
 		}
 
-		EventTimer.prototype = {
+		EventCounter.prototype = {
+			mousePressed: function(ctx, e) {
+				this._pressEvents += 1;
+				log("Press count: " + this._pressEvents);
+				return ctx.next(e);
+			},
 
+			mouseReleased: function(ctx, e) {
+				this._releaseEvents += 1;
+				log("Release count: " + this._releaseEvents);
+				return ctx.next(e);
+			}
 		};
 
-		pipeline.addHandler(new EventLogger());
+
+
+
+		var pipeline = createPipeline(['mousePressed', 'mouseReleased']);
 		
 		document.addEventListener('mousedown', function(e) {
 			pipeline.mousePressed(e);
@@ -51,7 +170,56 @@
 
 		document.addEventListener('mouseup', function(e) {
 			pipeline.mouseReleased(e);
-		})
+		});
+
+
+
+
+
+		pipeline.addLast('br', {
+			mousePressed: function(ctx, e) {
+				if (ctx.length() > 1)
+					br();
+				return ctx.next(e);
+			},
+
+			mouseReleased: function(ctx, e) {
+				return ctx.next(e);
+			}
+		});
+
+		var constructors = {
+			eventCounter: EventCounter,
+			distanceCalculator: DistanceCalculator,
+			holdTimer: HoldTimer,
+			eventLogger: EventLogger
+		};
+
+		var participants = {};
+
+		var $pipeline = $('#pipeline');
+
+		$('.pipelineChoices > button').click(function(e) {
+			var name = e.currentTarget.dataset.name;
+
+			if (!(name in participants)) {
+				var obj = new constructors[name]();
+				pipeline.addLast(name, obj);
+				participants[name] = true;
+
+				$pipeline.append('<li>' + name + '<button type="button" class="close" data-name="' + name + '">&times;</button></li>');
+			}
+		});
+
+		$(document).on('click', '.close', function(e) {
+			var name = e.currentTarget.dataset.name;
+
+			if (name in participants) {
+				delete participants[name];
+				pipeline.remove(name);
+				$(e.currentTarget).parent().remove();
+			}
+		});
 	</script>
 </body>
 </html>
