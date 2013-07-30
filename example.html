@@ -21,7 +21,7 @@
 	}
 
 	.pipelineChoices {
-		width: 520px;
+		width: 560px;
 		margin: 0 auto;
 	}
 
@@ -41,11 +41,15 @@
 	<div class="container">
 		<div class="row">
 				<div class="pipelineChoices">
+					<p>
+					A pipeline for processing mousedown and mouseup events.
+					</p>
 					<div><strong>Add to pipeline:</strong></div>
 					<button class="btn btn-default" data-name="eventLogger">Event Logger</button>
 					<button class="btn btn-default" data-name="holdTimer">Hold Timer</button>
 					<button class="btn btn-default" data-name="eventCounter">Event Counter</button>
 					<button class="btn btn-default" data-name="distanceCalculator">Distance Calculator</button>
+					<button class="btn btn-default" data-name="abort">Abort</button>
 				</div>
 		</div>
 
@@ -159,7 +163,18 @@
 			}
 		};
 
+		function Abort() {
 
+		}
+
+		Abort.prototype = {
+			mousePressed: function() {
+				log("Abort: ceased mousedown processing.");
+			},
+			mouseReleased: function() {
+				log("Abort: ceased mouseup processing.");
+			}
+		};
 
 
 		var pipeline = createPipeline(['mousePressed', 'mouseReleased']);
@@ -192,7 +207,8 @@
 			eventCounter: EventCounter,
 			distanceCalculator: DistanceCalculator,
 			holdTimer: HoldTimer,
-			eventLogger: EventLogger
+			eventLogger: EventLogger,
+			abort: Abort
 		};
 
 		var participants = {};
