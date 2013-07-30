@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+	<script src="pipeline.js"></script>
+	<script>
+		var pipeline = createPipeline(['mousePressed', 'mouseReleased']);
+
+		function EventLogger() {
+		}
+
+		EventLogger.prototype = {
+			mousePressed: function(ctx, e) {
+				console.log(e);
+				ctx.next(e);
+			},
+
+			mouseReleased: function(ctx, e) {
+				console.log(e);
+				ctx.next(e);
+			}
+		};
+
+		function HoldTimer() {
+		}
+
+		HoldTimer.prototype = {
+
+		};
+
+		function DistanceCalculator() {
+		}
+
+		DistanceCalculator.prototype = {
+
+		};
+
+		function EventTimer() {
+		}
+
+		EventTimer.prototype = {
+
+		};
+
+		pipeline.addHandler(new EventLogger());
+		
+		document.addEventListener('mousedown', function(e) {
+			pipeline.mousePressed(e);
+		});
+
+		document.addEventListener('mouseup', function(e) {
+			pipeline.mouseReleased(e);
+		})
+	</script>
+</body>
+</html>
